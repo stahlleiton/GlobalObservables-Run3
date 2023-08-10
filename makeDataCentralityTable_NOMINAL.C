@@ -217,7 +217,7 @@ void makeDataCentralityTable_NOMINAL(int nbins = 200, const string label = "hiHF
   double mcXscale = 0.86;
   double mcYscale = 1;
   if (useMC)
-    mcYscale = 1.0*t->GetEntries(Form("hiHF>%f && hiHF<%f && run <= 362320 && HLT_HIMinimumBias_v2 ==1 && pprimaryVertexFilterHI ==1 && pclusterCompatibilityFilter ==1 && numMinHFTower4 >=2", threshold, thresholdMax))/tmc->GetEntries(Form("hiHF>%f && hiHF<%f && HLT_HIMinimumBias_v2 ==1 && pprimaryVertexFilter ==1 && pclusterCompatibilityFilter ==1 && numMinHFTower4 >=2", threshold/mcXscale, thresholdMax/mcXscale));
+    mcYscale = 1.0*t->GetEntries(Form("hiHF>%f && hiHF<%f && run <= 362320 && HLT_HIMinimumBias_v2 ==1 && pprimaryVertexFilterHI ==1 && pclusterCompatibilityFilter ==1 && numMinHFTower4 >=2", threshold_norm, thresholdMax))/tmc->GetEntries(Form("hiHF>%f && hiHF<%f && HLT_HIMinimumBias_v2 ==1 && pprimaryVertexFilter ==1 && pclusterCompatibilityFilter ==1 && numMinHFTower4 >=2", threshold_norm/mcXscale, thresholdMax/mcXscale));
 
     //if (useMC)
     //mcYscale = 1.0*data_entries/tmc->GetEntries(Form("hiHF>%f && hiHF<%f", threshold/mcXscale, thresholdMax/mcXscale));
