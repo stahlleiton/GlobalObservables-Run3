@@ -1,72 +1,63 @@
 #include "TFile.h"
 #include "TTree.h"
 #include <iostream>
-using namespace std;
 
-void makeCentrality_NOMINAL_v1(){
+void makeCentrality_NOMINAL_v1()
+{
+  // Constant parameters
+  const int  hfCoinThr = 4;
 
-  TFile* infData = TFile::Open("/eos/cms/store/group/phys_heavyions/anstahll/GO2023/HiForestAODZB_TestRun_Data_ZB1.root");
-
-  TFile* outf = new TFile("compare_centralitybins_Th100_Withofficial2022MC_NOMINAL_Aug11_v1.root","recreate");
   //Threshold = 100 (Nominal)
-  float bounds[201] = {0, 13.3145, 14.4357, 15.3788, 16.266, 17.0986, 17.952, 18.8266, 19.7014, 20.5792, 21.5344, 22.4929, 23.4772, 24.5017, 25.572, 26.6768, 27.8178, 29.0134, 30.2532, 31.5644, 32.9105, 34.305, 35.7672, 37.275, 38.8872, 40.5392, 42.3589, 44.1401, 46.0941, 48.1159, 50.1956, 52.3762, 54.691, 57.0964, 59.5681, 62.1371, 64.8221, 67.6734, 70.5275, 73.4911, 76.5685, 79.7387, 83.1046, 86.5429, 90.0977, 93.7198, 97.6043, 101.455, 105.557, 109.343, 113.422, 117.411, 121.893, 126.179, 130.787,135.444, 140.796, 145.707, 151.592, 157.613, 163.95, 169.501, 176.017, 182.681, 189.878, 196.804, 203.462, 211.277, 219.342, 227.236, 235.32, 243.558, 252.57, 262.022, 271.51, 280.539, 288.88, 298.446, 309.011, 318.898, 329.053, 340.171, 350.878, 362.12, 373.652, 385.575, 397.356, 409.668, 423.177, 436.935, 450.249, 463.773, 478.832, 494.756, 510.134, 524.757, 540.658, 557.165, 572.879, 590.542, 607.877, 626.532, 643.586, 662.722, 678.161, 699.226, 719.336, 741.804, 763.89, 784.438, 803.974, 826.603, 847.498, 868.371, 889.216, 912.972, 940.382, 965.47, 992.524, 1014.86, 1037.85, 1062.6, 1088.12, 1114.68, 1142.1, 1171.45, 1196.72, 1223.67, 1254.69, 1285.67, 1315.25, 1344.15, 1373.36, 1402.61, 1436.13, 1468.57, 1503.51, 1536.4, 1573.15, 1605.26, 1637.94, 1669.47, 1704.82, 1742.03, 1776.44, 1816.34, 1852.98, 1895.98, 1936.18, 1973.47, 2017.17, 2053.69, 2095.91, 2141.64, 2187.64, 2235.13, 2286.23, 2330.54, 2369.8, 2412.87, 2460, 2514.63, 2566.73, 2617.75,2667.91, 2723.12, 2772.9, 2828.47, 2883.42, 2938.53, 2997.39, 3056.38, 3112.22, 3169.48, 3227.21, 3297.18, 3368.91, 3429.5, 3491.42, 3552.9, 3625.8, 3693.3, 3764.38, 3836.9, 3918, 4002.25, 4074.25, 4152.45, 4231.82, 4314.37, 4402.17, 4486.14, 4573.65, 4674.61, 4776.59, 4871.57, 4972.08, 5066.03, 5181.6, 5340.05, 5920.4};
+  const float bounds[201] = {0, 10.3936, 11.139, 11.8473, 12.5633, 13.2989, 14.0502, 14.8044, 15.5867, 16.3663, 17.17, 18.0086, 18.8808, 19.7601, 20.6558, 21.6331, 22.6134, 23.6261, 24.6832, 25.7968, 26.9304, 28.1161, 29.36, 30.6509, 32.0071, 33.4047, 34.8694, 36.3867, 37.9862, 39.6281, 41.4218, 43.286, 45.2203, 47.236, 49.3532, 51.5665, 53.8534, 56.3585, 58.8423, 61.458, 64.1841, 67.0791, 70.0369, 73.0162, 76.1905, 79.4435, 82.8564, 86.3925, 90.0308, 93.7451, 97.7624, 101.712, 105.745, 110.025, 114.499, 119.139, 124.059, 129.035, 134.178, 139.549, 145.126, 150.904, 156.839, 162.91, 169.239, 175.622, 182.399, 189.278, 196.452, 203.883, 211.603, 219.357, 227.408, 235.656, 244.272, 252.903, 261.808, 271.378, 280.853, 290.514, 300.82, 311.1, 322.012, 333.029, 344.39, 356.01, 367.987, 380.265, 392.762, 405.627, 419.015, 432.48, 446.543, 460.754, 475.059, 490.29, 505.592, 521.326, 537.077, 553.2, 570.138, 587.503, 605.092, 622.876, 640.819, 658.965, 677.708, 697.443, 717.242, 737.287, 757.71, 778.643, 799.681, 821.531, 843.182, 865.345, 888.858, 911.826, 935.783, 960.571, 985.701, 1010.95, 1036.59, 1063.06, 1089.78, 1116.68, 1144.23, 1172.47, 1201, 1229.83, 1259.37, 1290.21, 1321.26, 1352.78, 1383.84, 1416.33, 1448.65, 1481.42, 1515.49, 1549.22, 1584.66, 1621.11, 1657.5, 1694.54, 1732.75, 1771.03, 1809.55, 1849.23, 1888.76, 1928.87, 1970.08, 2012.39, 2055.13, 2098.15, 2142.24, 2185.82, 2231.89, 2277.81, 2324.66, 2372.53, 2421.23, 2470.56, 2520.4, 2572.21, 2623.61, 2675.65, 2729.34, 2784.23, 2838.71, 2895.29, 2953.37, 3011.77, 3070.92, 3131.24, 3192.27, 3255.13, 3319.95, 3385.98, 3452.52, 3520.57, 3592.11, 3663.32, 3735.27, 3810, 3886.55, 3965.05, 4045.09, 4126.84, 4209.26, 4295.86, 4384.6, 4472.23, 4566.55, 4662.89, 4760.9, 4864.15, 4965.96, 5072.55, 5190.35, 5337.33, 8031.6};
 
-  float hf; 
-  int hiBin, numMinHFTower4;
-  int phfCoincFilter3, pprimaryVertexFilter, pclusterCompatibilityFilter;
-  int hlt_mb;
+  // Process data
+  const std::string inFileName = "/eos/cms/store/group/phys_heavyions/anstahll/GO2023/HIForest_HIMinimumBias_HIRun2022A_20230811_SKIM.root";
+  TFile inFile(inFileName.c_str(), "READ");
+  if (!inFile.IsOpen()) throw std::logic_error("Data file was not found!");
+  const auto& tref = inFile.Get<TTree>("hiEvtAnalyzer/HiTree");
+  const auto& tskimanalysis = inFile.Get<TTree>("skimanalysis/HltTree");
+  const auto& thltanalysis = inFile.Get<TTree>("hltanalysis/HltTree");
+  tref->AddFriend(tskimanalysis);
+  tref->AddFriend(thltanalysis);
 
-  TTree* tref = (TTree*)infData->Get("hiEvtAnalyzer/HiTree");
-  TTree *tskim = (TTree*)infData->Get("skimanalysis/HltTree");
-  TTree *thlt = (TTree*)infData->Get("hltanalysis/HltTree");
-
-  tref->AddFriend(tskim);
-  tref->AddFriend(thlt);
-
-  tref->SetBranchAddress("hiHF", &hf);
-  tref->SetBranchAddress("hiBin", &hiBin);
-  tref->SetBranchAddress("HLT_HIMinimumBias_v2", &hlt_mb);
-  tref->SetBranchAddress("pprimaryVertexFilter", &pprimaryVertexFilter);
-  tref->SetBranchAddress("pclusterCompatibilityFilter", &pclusterCompatibilityFilter);
-  //tskim->SetBranchAddress("phfCoincFilter3", &phfCoincFilter3);
-  tref->SetBranchAddress("numMinHFTower4", &numMinHFTower4);
-
+  UInt_t run;
+  tref->SetBranchAddress("run", &run);
+  std::map<std::string, int> varI;
+  const char* numMinHFTowerLbl = Form("numMinHFTower%d", hfCoinThr);
+  for (const auto& p : {"HLT_HIMinimumBias_v2", "pprimaryVertexFilter", "pclusterCompatibilityFilter", numMinHFTowerLbl, "hiBin"})
+    tref->SetBranchAddress(p, &(varI[p]));
+  std::map<std::string, float> varF;
+  for (const auto& p : {"hiHF", "vz"})
+    tref->SetBranchAddress(p, &(varF[p]));
   tref->SetBranchStatus("*", 0);
-  for (const auto& p : {"hiHF", "hiBin", "HLT_HIMinimumBias_v2", "pprimaryVertexFilter", "pclusterCompatibilityFilter", "numMinHFTower4"})
+  for (const auto& p : {"run", "hiHF", "HLT_HIMinimumBias_v2", "pprimaryVertexFilter", "pclusterCompatibilityFilter", numMinHFTowerLbl, "vz", "hiBin"})
     tref->SetBranchStatus(p, 1);
 
   int newbin;
-  TTree* t = new TTree("anaCentrality","analysis level centrality");
-  t->Branch("newBin",&newbin,"newBin/I");
-  t->Branch("oldBin",&hiBin,"newBin/I");
-
-  int N = tref->GetEntries();
-  for(int i = 0; i < N; ++i){
-    tref->GetEntry(i);
-    //thlt->GetEntry(i);
-    //tskim->GetEntry(i);
-    
-    if(i % 500000 == 0) cout<<"processing event : "<<i<<endl;
-
-    if(hlt_mb != 1) continue;
-    if(pprimaryVertexFilter != 1) continue;
-    if(pclusterCompatibilityFilter != 1) continue;
-    if(numMinHFTower4 < 2)continue;
-
-    newbin = 199; 
-    for(int b = 0; b < 200; ++b){
-      if(hf >= bounds[199-b]){
-	newbin = b;
-	break;	    
-      }
-    }
-
-    t->Fill();
+  TFile outf("compare_centralitybins_Th100_Withofficial2022MC_NOMINAL_Aug11_v1.root","recreate");
+  TTree t1("anaCentrality_Before362320","analysis level centrality");
+  TTree t2("anaCentrality_After362320","analysis level centrality");
+  for (auto& t : {&t1, &t2}) {
+    t->Branch("newBin",&newbin,"newBin/I");
+    t->Branch("oldBin",&(varI.at("hiBin")),"oldBin/I");
   }
 
-  t->Write();
-  outf->Write();
-
+  const auto& Nevents = tref->GetEntries();
+  for(Long64_t iev = 0; iev < Nevents; iev++) {
+    if(iev%1000000 == 0) cout<<"Processing data event: " << iev << " / " << Nevents << endl;
+    tref->GetEntry(iev);
+    const bool pass = (varI.at("HLT_HIMinimumBias_v2")>0 && varI.at("pprimaryVertexFilter")>0 && varI.at("pclusterCompatibilityFilter")>0 && varI.at(numMinHFTowerLbl)>=2);
+    if (!pass) continue;
+    newbin = 199;
+    for(size_t b = 0; b < 200; ++b){
+      if(varF.at("hiHF") >= bounds[199-b]){
+        newbin = b;
+        break;
+      }
+    }
+    ((run <= 362320) ? t1 : t2).Fill();
+  }
+  t1.Write();
+  t2.Write();
+  outf.Close();
 }
-
-
