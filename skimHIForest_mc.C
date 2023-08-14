@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 
-void skimHIForest_mc(const std::string& filein="/eos/cms/store/group/phys_heavyions/anstahll/GO2023/HiForestMiniAOD_HYDJET_June7_test.root",
+void skimHIForest_mc(const std::string& filein="/eos/cms/store/group/phys_heavyions/anstahll/GO2023/mc/HiForestMiniAOD_HYDJET_June7_test.root",
                      const std::string& dirout="/eos/cms/store/group/phys_heavyions/anstahll/GO2023/SKIM/")
 {
   // prepare multi-threading
@@ -11,11 +11,11 @@ void skimHIForest_mc(const std::string& filein="/eos/cms/store/group/phys_heavyi
 
   const std::map<std::string, std::string> treeInfo({{"hiEvtAnalyzer", "HiTree"}, {"skimanalysis", "HltTree"}, {"hltanalysis", "HltTree"}});
   const std::vector<std::string> treeDirV({"hiEvtAnalyzer", "skimanalysis", "hltanalysis"});
-  std::map<size_t, std::vector<std::string>> varsUI({ {0, {"run"}} });
+  std::map<size_t, std::vector<std::string>> varsUI({ {0, {}} });
   std::map<size_t, std::vector<std::string>> varsI({ {0, {"numMinHFTower4", "numMinHFTower5", "hiBin"}},
                                                      {1, {"pprimaryVertexFilter", "pclusterCompatibilityFilter"}},
-                                                     {2, {"HLT_HIMinimumBias_v2"}} });
-  std::map<size_t, std::vector<std::string>> varsF({ {0, {"hiHF", "vz"}} });
+                                                     {2, {"HLT_HIMinimumBias_v2", "HLT_HIZeroBias_v4"}} });
+  std::map<size_t, std::vector<std::string>> varsF({ {0, {"hiHF", "vz", "maxHFTowerE"}} });
   std::vector<std::string> columns;
   for (const auto& c : varsUI)
     for (const auto& v : c.second)

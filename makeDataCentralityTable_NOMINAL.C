@@ -15,15 +15,17 @@
 #include <algorithm>
 #include <string>
 #include <map>
+#include <numeric>
 
 
-void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
+void makeDataCentralityTable_NOMINAL(const int hfCoinN = 2,
+                                     const int hfCoinThr = 5,
+                                     const double threshold = 100.0,
+                                     const size_t nbins = 200,
                                      const std::string tag = "CentralityTable_HFtowers200_DataPbPb_periHYDJETshape_run3v1205x02_offline")
 {
   // Constant parameters
   const auto mcXscale = 0.86;
-  const int  hfCoinThr = 4;
-  const auto threshold = 100.0;
   const auto threshold_norm = 1000.0;
   const auto thresholdMax = 4000.0;
 
@@ -41,19 +43,23 @@ void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
   t->SetBranchAddress("run", &run);
   std::map<std::string, int> varI, mcVarI;
   const char* numMinHFTowerLbl = Form("numMinHFTower%d", hfCoinThr);
-  for (const auto& p : {"HLT_HIMinimumBias_v2", "pprimaryVertexFilter", "pclusterCompatibilityFilter", numMinHFTowerLbl})
+  for (const auto& p : {"HLT_HIMinimumBias_v2", "HLT_HIZeroBias_v4", "pprimaryVertexFilter", "pclusterCompatibilityFilter", numMinHFTowerLbl, "hiBin"})
     t->SetBranchAddress(p, &(varI[p]));
   std::map<std::string, float> varF, mcVarF;
   for (const auto& p : {"hiHF", "vz"})
     t->SetBranchAddress(p, &(varF[p]));
   t->SetBranchStatus("*", 0);
-  for (const auto& p : {"run", "hiHF", "HLT_HIMinimumBias_v2", "pprimaryVertexFilter", "pclusterCompatibilityFilter", numMinHFTowerLbl, "vz"})
+  for (const auto& p : {"run", "hiHF", "HLT_HIMinimumBias_v2", "HLT_HIZeroBias_v4", "pprimaryVertexFilter", "pclusterCompatibilityFilter", numMinHFTowerLbl, "vz", "hiBin"})
     t->SetBranchStatus(p, 1);
 
-  std::vector<std::pair<float, bool>> values;
+  std::vector<std::pair<float, bool>> values, hfdata;
+  std::vector<std::pair<int, bool>> hibin;
   TH1D::SetDefaultSumw2();
   TH1F hfData1("hfData1","hf data run <= 363320", 2000,0, 10000);
   TH1F hfData2("hfData2","hf data run > 363320", 2000,0, 10000);
+  TEfficiency dataEff1("dataEff1", "dataEff1", 1000, 0, 1000);
+  TEfficiency dataEff2("dataEff2", "dataEff2", 1000, 0, 1000);
+  std::array<std::array<size_t, 500>, 4> numMinHFTowerV{};
 
   auto Nevents = t->GetEntries();
   double mcYscale_data(0);
@@ -61,8 +67,11 @@ void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
     if(iev%1000000 == 0) cout<<"Processing data event: " << iev << " / " << Nevents << endl;
     t->GetEntry(iev);
     const auto& parameter = varF.at("hiHF");
-    const bool pass = (varI.at("HLT_HIMinimumBias_v2")>0 && varI.at("pprimaryVertexFilter")>0 && varI.at("pclusterCompatibilityFilter")>0 && varI.at(numMinHFTowerLbl)>=2);
+    const auto& numMinHFTower = varI.at(numMinHFTowerLbl);
+    const bool pass = (varI.at("HLT_HIMinimumBias_v2")>0 && varI.at("pprimaryVertexFilter")>0 && varI.at("pclusterCompatibilityFilter")>0 && numMinHFTower>=hfCoinN);
     if (pass) {
+      hfdata.push_back({parameter, (run <= 362320)});
+      hibin.push_back({varI.at("hiBin"), (run <= 362320)});
       if (run <= 362320) {
         hfData1.Fill(parameter);
         if (parameter > threshold)
@@ -73,8 +82,29 @@ void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
       else if (run > 362320)
         hfData2.Fill(parameter);
     }
+    if (pass) {
+      const bool passTight = (pass && varI.at(numMinHFTowerLbl)>=(hfCoinN+1));
+      ((run <= 362320) ? dataEff1 : dataEff2).Fill(passTight, parameter);
+    }
+    if (varI.at("HLT_HIMinimumBias_v2")>0 && varI.at("pprimaryVertexFilter")>0 && varI.at("pclusterCompatibilityFilter")>0) {
+      size_t idx = (parameter > 1000.)*2 + (run <= 362320);
+      if ((parameter > 1000.) || (parameter < 140.))//(parameter > 25. && parameter < 60.))//(parameter > 60. && parameter < 140.))
+        numMinHFTowerV[idx][numMinHFTower] += 1;
+    }
   } //data events loop
   inFile.Close();
+
+  // Compute noise study
+  TH1F hfNoise1("hfNoise1","hf noise data run <= 363320", 60, 0, 60);
+  TH1F hfNoise2("hfNoise2","hf noise data run > 363320", 60, 0, 60);
+  std::array<std::array<double, 200>, 4> nEvt{};
+  for (size_t i=0; i<101; i++)
+    for (size_t j=0; j<4; j++)
+      nEvt[j][i] = std::accumulate(numMinHFTowerV[j].begin()+i, numMinHFTowerV[j].end(), 0);
+  for (size_t i=0; i<60; i++) {
+    hfNoise1.SetBinContent(i+1, (nEvt[0][i] / nEvt[1][i])*(nEvt[3][i] / nEvt[2][i]));
+    hfNoise2.SetBinContent(i+1, nEvt[1][i] / nEvt[1][20]);
+  }
 
   // Process MC
   TFile inputMCfile("/eos/cms/store/group/phys_heavyions/anstahll/GO2023/HiForestMiniAOD_HYDJET_June7_test_SKIM.root", "READ");
@@ -95,7 +125,7 @@ void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
 
   TH1F hfMc1("hfMc1","hf mc", 2000, 0, 10000);
   TH1F hfMc2("hfMc2","hf mc", 2000, 0, 10000);
-  TEfficiency mcEff("mcEff", "mcEff", 2000, 0, 10000);
+  TEfficiency mcEff("mcEff", "mcEff", 1000, 0, 1000);
 
   Nevents = tmc->GetEntries();
   double mcYscale_mc(0);
@@ -103,7 +133,7 @@ void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
     if(iev%500000 == 0) cout<<"Processing mc event: " << iev << " / " << Nevents << endl;
     tmc->GetEntry(iev);
     const auto parameter = mcVarF.at("hiHF") * mcXscale;
-    const bool pass = (mcVarI.at("HLT_HIMinimumBias_v2")>0 && mcVarI.at("pprimaryVertexFilter")>0 && mcVarI.at("pclusterCompatibilityFilter")>0 && mcVarI.at(numMinHFTowerLbl)>=2);
+    const bool pass = (mcVarI.at("HLT_HIMinimumBias_v2")>0 && mcVarI.at("pprimaryVertexFilter")>0 && mcVarI.at("pclusterCompatibilityFilter")>0 && mcVarI.at(numMinHFTowerLbl)>=hfCoinN);
     if (pass) {
       hfMc1.Fill(parameter);
       if (parameter>threshold_norm && parameter<thresholdMax)
@@ -131,7 +161,7 @@ void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
   const auto totEff = hfData1.Integral() / hfCombined.Integral();
 
   // Store histograms
-  const std::string outputTag = Form("v1_TestRun_xSF0p86_ySFwithAllFilter_ThE%dGeV_officiaMC2022__Threshold%.0f__NOMINAL__Normalisation%.0f_%.0f__GT_Aug10_NEW", hfCoinThr, threshold, threshold_norm, thresholdMax);
+  const std::string outputTag = Form("v1_TestRun_xSF0p86_ySFwithAllFilter_%dThE%dGeV_officiaMC2022__Threshold%.0f__NOMINAL__Normalisation%.0f_%.0f__GT_Aug10_NEW", hfCoinN, hfCoinThr, threshold, threshold_norm, thresholdMax);
   TFile outFile(Form("CentralityTable_HFtowers200_DataPbPb_usingMC_%s.root", outputTag.c_str()),"recreate");
   const auto& dir = outFile.mkdir(tag.c_str());
   dir->cd();
@@ -141,6 +171,10 @@ void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
   hfMc1.Write();
   hfMc2.Write();
   mcEff.Write();
+  dataEff1.Write();
+  dataEff2.Write();
+  hfNoise1.Write();
+  hfNoise2.Write();
   hfCombined.Write();
   outFile.Close();
 
@@ -183,7 +217,7 @@ void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
     integral += v.second ? mcYscale : 1.;
     const auto sum = currentbin*(totalXsec/nbins);
 	if(integral > sum) {
-      std::cout << "current bin = " << currentbin << " ; integral = " << integral << " ; sum = " << sum << std::endl;
+      //std::cout << "current bin = " << currentbin << " ; integral = " << integral << " ; sum = " << sum << std::endl;
 	  binboundaries[currentbin] = val >= 0 ? val : 0;
 	  currentbin++;
 	}
@@ -195,4 +229,28 @@ void makeDataCentralityTable_NOMINAL(const size_t nbins = 200,
   txtfile << std::endl;
   txtfile<<"-------------------------------------"<<endl;
   txtfile.close();
+
+  // Check bin boundaries
+  int newbin, oldbin;
+  TFile outf(Form("compare_centralitybins_%s.root", outputTag.c_str()),"recreate");
+  TTree t1("anaCentrality_Before362320","analysis level centrality");
+  TTree t2("anaCentrality_After362320","analysis level centrality");
+  for (auto& t : {&t1, &t2}) {
+    t->Branch("newBin",&newbin,"newBin/I");
+    t->Branch("oldBin",&oldbin,"oldBin/I");
+  }
+  for (size_t i=0; i<hfdata.size(); i++) {
+    newbin = 199;
+    for(size_t b = 0; b < 200; ++b){
+      if(hfdata[i].first >= binboundaries[199-b]){
+        newbin = b;
+        break;
+      }
+    }
+    oldbin = hibin[i].first;
+    (hfdata[i].second ? t1 : t2).Fill();
+  }
+  t1.Write();
+  t2.Write();
+  outf.Close();
 }

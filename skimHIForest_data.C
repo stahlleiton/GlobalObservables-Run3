@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 
-void skimHIForest_data(const std::string& dirin="/eos/cms/store/group/phys_heavyions/anstahll/GO2023/", const std::string& dirout="/eos/cms/store/group/phys_heavyions/anstahll/GO2023/SKIM/")
+void skimHIForest_data(const std::string& dirin="/eos/cms/store/group/phys_heavyions/anstahll/GO2023/data/", const std::string& dirout="/eos/cms/store/group/phys_heavyions/anstahll/GO2023/SKIM/")
 {
   // prepare multi-threading
   ROOT::EnableImplicitMT(14);
@@ -13,8 +13,8 @@ void skimHIForest_data(const std::string& dirin="/eos/cms/store/group/phys_heavy
   std::map<size_t, std::vector<std::string>> varsUI({ {0, {"run"}} });
   std::map<size_t, std::vector<std::string>> varsI({ {0, {"numMinHFTower4", "numMinHFTower5", "hiBin"}},
                                                      {1, {"pprimaryVertexFilter", "pclusterCompatibilityFilter"}},
-                                                     {2, {"HLT_HIMinimumBias_v2"}} });
-  std::map<size_t, std::vector<std::string>> varsF({ {0, {"hiHF", "vz"}} });
+                                                     {2, {"HLT_HIMinimumBias_v2", "HLT_HIZeroBias_v4"}} });
+  std::map<size_t, std::vector<std::string>> varsF({ {0, {"hiHF", "vz", "maxHFTowerE"}} });
   std::vector<std::string> columns;
   for (const auto& c : varsUI)
     for (const auto& v : c.second)
@@ -27,7 +27,7 @@ void skimHIForest_data(const std::string& dirin="/eos/cms/store/group/phys_heavy
       columns.push_back(v);
 
   for (size_t iF=0; iF<24; iF++) {
-    const auto filein = dirin + Form("HIForest_HIMinimumBias%lu_HIRun2022A_20230811.root", iF);
+    const auto filein = dirin + Form("HIForest_HIMinimumBias%lu_HIRun2022A_20230813.root", iF);
     auto fileout = dirout + filein.substr(filein.rfind("/")+1);
     fileout = fileout.substr(0, fileout.rfind(".root")) + "_SKIM.root";
 
@@ -48,7 +48,7 @@ void skimHIForest_data(const std::string& dirin="/eos/cms/store/group/phys_heavy
 
     // Skim trees
     ROOT::RDataFrame df(tree, columns);
-    df.Filter("HLT_HIMinimumBias_v2 == 1 && pprimaryVertexFilter == 1").Snapshot("skim", dirout+"skim.root", columns);
+    df.Filter("pprimaryVertexFilter == 1").Snapshot("skim", dirout+"skim.root", columns);
 
     std::cout << "Changing to HiForest format: " << filein << std::endl;
 
